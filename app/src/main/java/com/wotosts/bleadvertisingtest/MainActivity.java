@@ -36,13 +36,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }).setRationaleMessage("Blutooth")
                 .setPermissions(Manifest.permission.BLUETOOTH);*/
-
-
-        boolean bleEnabled = BLEUtils.checkBluetoothAdapter(this);
-        if(!bleEnabled) {
-            Toast.makeText(this, "Turn on Bluetooth", Toast.LENGTH_LONG).show();
-            finish();
-        }
     }
 
     public void onObserverBtnClicked(View view) {

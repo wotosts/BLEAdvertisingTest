@@ -22,6 +22,10 @@
         </activity>
         <activity android:name=".ble.client.BluetoothClientTestActivity"></activity>
         <activity android:name=".ble.server.BluetoothAdvTestActivity"></activity>
+        <service
+            android:name=".ble.server.BLEAdvertiserService"
+            android:enabled="true"
+            android:exported="false" />
     </application>
 
 </manifest>

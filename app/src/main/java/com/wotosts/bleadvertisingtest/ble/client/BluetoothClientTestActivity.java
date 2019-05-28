@@ -40,7 +40,7 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
 
     private ActivityBluetoothClientTestBinding binding;
 
-    private BluetoothAdapter adapter;
+    private BluetoothAdapter bleAdapter;
     private BluetoothLeScanner scanner;
     private boolean scanning;
     private Handler handler;
@@ -55,8 +55,8 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
         binding = DataBindingUtil.setContentView(this, R.layout.activity_bluetooth_client_test);
 
         BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-        adapter = bluetoothManager.getAdapter();
-        scanner = adapter.getBluetoothLeScanner();
+        bleAdapter = bluetoothManager.getAdapter();
+        scanner = bleAdapter.getBluetoothLeScanner();
         handler = new Handler();
 
         boolean bleEnabled = BLEUtils.checkBluetoothAdapter(this);
@@ -73,7 +73,7 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
         leResultListAdapter = new LeResultListAdapter(new LeResultListAdapter.ItemClickListener() {
             @Override
             public void onItemClicked(ScanResult result) {
-                connectDevice(result);
+                    connectDevice(result);
             }
         });
         binding.rvDevice.setAdapter(leResultListAdapter);
@@ -168,6 +168,10 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
 
     public void disconnectGattServer() {
         connected = false;
+
+        leResultListAdapter.setConnected(null);
+        leResultListAdapter.notifyDataSetChanged();
+
         if (gatt != null) {
             gatt.disconnect();
             gatt.close();
@@ -188,16 +192,21 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
     }
 
     private void connectDevice(ScanResult result) {
-        disconnectGattServer();
+        ScanResult preResult = leResultListAdapter.getConnected();
 
-        BluetoothDevice device = result.getDevice();
+        if(preResult != null && preResult.equals(result)) {
+            disconnectGattServer();
+        }
+        else {
+            BluetoothDevice device = result.getDevice();
 
-        gatt = device.connectGatt(this, false, gattCallback);
+            gatt = device.connectGatt(this, false, gattCallback);
 
-        if(gatt != null) {
-            leResultListAdapter.setConnected(result);
-            leResultListAdapter.notifyDataSetChanged();
-            setConnected(true);
+            if (gatt != null) {
+                leResultListAdapter.setConnected(result);
+                leResultListAdapter.notifyDataSetChanged();
+                setConnected(true);
+            }
         }
     }
 
@@ -214,7 +223,7 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
             return;
         }
 
-        String message = binding.etAdv2.getText().toString();
+        String message = binding.etClient.getText().toString();
 
         byte[] messageBytes = message.getBytes();
         if (messageBytes.length == 0) {
@@ -304,7 +313,7 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicWrite(gatt, characteristic, status);
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                Toast.makeText(getApplicationContext(), "onCharacteristicWrite Success", Toast.LENGTH_SHORT).show();
+                handler.post(() -> Toast.makeText(getApplicationContext(), "onCharacteristicWrite Success", Toast.LENGTH_SHORT).show());
             } else
                 disconnectGattServer();
         }
@@ -316,7 +325,7 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 byte[] messageBytes = characteristic.getValue();
                 try {
-                    final String message = new String(messageBytes, "UTF-8");
+                    final String message = "Read " + new String(messageBytes, "UTF-8");
                     showToast(message);
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
@@ -330,8 +339,9 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
 
             byte[] messageByte = characteristic.getValue();
             try {
-                final String messageStr = new String(messageByte, "UTF-8");
+                final String messageStr = "Changed " + new String(messageByte, "UTF-8");
                 showToast(messageStr);
+                handler.post(()-> binding.etClient.setText(messageStr));
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }

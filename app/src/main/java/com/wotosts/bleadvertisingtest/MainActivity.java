@@ -23,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        /*TedPermission.with(this)
+        TedPermission.with(this)
                 .setPermissionListener(new PermissionListener() {
                     @Override
                     public void onPermissionGranted() {
@@ -34,8 +34,9 @@ public class MainActivity extends AppCompatActivity {
                     public void onPermissionDenied(List<String> deniedPermissions) {
 
                     }
-                }).setRationaleMessage("Blutooth")
-                .setPermissions(Manifest.permission.BLUETOOTH);*/
+                }).setRationaleMessage("권한 허용")
+                .setPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
+                .check();
     }
 
     public void onObserverBtnClicked(View view) {

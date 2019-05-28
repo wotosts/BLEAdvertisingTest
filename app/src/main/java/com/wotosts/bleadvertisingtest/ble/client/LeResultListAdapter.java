@@ -60,6 +60,10 @@ public class LeResultListAdapter extends RecyclerView.Adapter<LeResultListAdapte
         connected = scanResult;
     }
 
+    public ScanResult getConnected() {
+        return connected;
+    }
+
     public void addResult(ScanResult scanResult) {
         boolean contain = false;
         List<ScanResult> removeList = new ArrayList<>();

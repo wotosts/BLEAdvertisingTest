@@ -9,7 +9,7 @@
         tools:context="com.wotosts.bleadvertisingtest.ble.client.BluetoothClientTestActivity">
 
         <EditText
-            android:id="@+id/etAdv2"
+            android:id="@+id/etClient"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
@@ -35,10 +35,10 @@
             android:background="@color/colorPrimaryDark"
             android:text="Send"
             android:onClick="onSendMessageBtnClicked"
-            app:layout_constraintBottom_toBottomOf="@+id/etAdv2"
+            app:layout_constraintBottom_toBottomOf="@+id/etClient"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/etAdv"
-            app:layout_constraintTop_toTopOf="@+id/etAdv2" />
+            app:layout_constraintTop_toTopOf="@+id/etClient" />
 
         <android.support.v7.widget.RecyclerView
             android:id="@+id/rvDevice"
@@ -51,7 +51,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/etAdv2" />
+            app:layout_constraintTop_toBottomOf="@+id/etClient" />
 
     </android.support.constraint.ConstraintLayout>
 </layout>

@@ -219,6 +219,7 @@ public class BLEAdvertiserService extends Service {
         startForeground(FOREGROUND_NOTI_ID, notification);
     }
 
+    // need foreground service permission
     @TargetApi(26)
     private void goForegroundOreo() {
         String NOTIFICATION_CHANNEL_ID = "com.wotosts.bleadvertisingtest";
@@ -374,7 +375,7 @@ public class BLEAdvertiserService extends Service {
                         startNewActivity(getApplicationContext(), messageStr);
 
                         // change characteristic data
-                        messageStr = "Server Response " + messageStr;
+                        messageStr = "Write response Server Response " + messageStr;
                         characteristic.setValue(messageStr);
                         Toast.makeText(getApplicationContext(), device.getAddress() + " " + messageStr + " sent", Toast.LENGTH_SHORT).show();
 

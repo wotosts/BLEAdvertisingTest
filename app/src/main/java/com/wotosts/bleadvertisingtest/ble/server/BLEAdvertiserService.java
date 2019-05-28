@@ -148,8 +148,8 @@ public class BLEAdvertiserService extends Service {
     private void setupServer() {
         service = new BluetoothGattService(BLEUtils.Service_UUID.getUuid(), BluetoothGattService.SERVICE_TYPE_PRIMARY);
         serverCharacteristic = new BluetoothGattCharacteristic(BLEUtils.Service_Characteristic_UUID.getUuid(),
-                BluetoothGattCharacteristic.PROPERTY_WRITE | BluetoothGattCharacteristic.PROPERTY_NOTIFY,
-                BluetoothGattCharacteristic.PERMISSION_WRITE);
+                BluetoothGattCharacteristic.PROPERTY_WRITE | BluetoothGattCharacteristic.PROPERTY_NOTIFY | BluetoothGattCharacteristic.PROPERTY_READ,
+                BluetoothGattCharacteristic.PERMISSION_WRITE | BluetoothGattCharacteristic.PERMISSION_READ);
         BluetoothGattDescriptor descriptor = new BluetoothGattDescriptor(BLEUtils.Service_Descriptor_UUID.getUuid(), BluetoothGattDescriptor.PERMISSION_READ);
         descriptor.setValue("test".getBytes());
 
@@ -159,6 +159,11 @@ public class BLEAdvertiserService extends Service {
     }
 
     private void stopServer() {
+        serverCharacteristic.setValue("Disconnect");
+        for (BluetoothDevice device : devicesList) {
+            gattServer.notifyCharacteristicChanged(device, serverCharacteristic, false);
+        }
+
         if (gattServer != null)
             gattServer.close();
     }
@@ -363,7 +368,7 @@ public class BLEAdvertiserService extends Service {
                 public void run() {
                     if (characteristic.getUuid().equals(BLEUtils.Service_Characteristic_UUID.getUuid())) {
                         // send response to client
-                        gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, null);
+                        gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, characteristic.getValue());
                         String messageStr = "";
                         try {
                             messageStr = new String(value, "UTF-8");
@@ -375,13 +380,13 @@ public class BLEAdvertiserService extends Service {
                         startNewActivity(getApplicationContext(), messageStr);
 
                         // change characteristic data
-                        messageStr = "Write response Server Response " + messageStr;
                         characteristic.setValue(messageStr);
+                        messageStr = "Write " + messageStr;
                         Toast.makeText(getApplicationContext(), device.getAddress() + " " + messageStr + " sent", Toast.LENGTH_SHORT).show();
 
-                        for (BluetoothDevice client : devicesList) {
-                            gattServer.notifyCharacteristicChanged(client, characteristic, false);
-                        }
+                        //for (BluetoothDevice client : devicesList) {
+                        //    gattServer.notifyCharacteristicChanged(client, characteristic, false);
+                        //}
                     }
                 }
             });
@@ -391,7 +396,11 @@ public class BLEAdvertiserService extends Service {
         public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicReadRequest(device, requestId, offset, characteristic);
 
-            handler.post(() -> Toast.makeText(getApplicationContext(), "Server onCharacteristicReadRequest", Toast.LENGTH_SHORT).show());
+            if (characteristic.getUuid().equals(BLEUtils.Service_Characteristic_UUID.getUuid())) {
+                // send response to client
+                gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, characteristic.getValue());
+            }
+            handler.post(() -> Toast.makeText(getApplicationContext(), "Server ReadRequest", Toast.LENGTH_SHORT).show());
         }
 
         @Override

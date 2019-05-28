@@ -60,7 +60,7 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
         handler = new Handler();
 
         boolean bleEnabled = BLEUtils.checkBluetoothAdapter(this);
-        if(!bleEnabled) {
+        if (!bleEnabled) {
             Toast.makeText(this, "Turn on Bluetooth", Toast.LENGTH_LONG).show();
             finish();
         }
@@ -73,7 +73,7 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
         leResultListAdapter = new LeResultListAdapter(new LeResultListAdapter.ItemClickListener() {
             @Override
             public void onItemClicked(ScanResult result) {
-                    connectDevice(result);
+                connectDevice(result);
             }
         });
         binding.rvDevice.setAdapter(leResultListAdapter);
@@ -187,17 +187,16 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
             }
         });
 
-        if(leResultListAdapter.getItemCount() != 0)
+        if (leResultListAdapter.getItemCount() != 0)
             connectDevice(leResultListAdapter.getResultList().get(0));
     }
 
     private void connectDevice(ScanResult result) {
         ScanResult preResult = leResultListAdapter.getConnected();
 
-        if(preResult != null && preResult.equals(result)) {
+        if (preResult != null && preResult.equals(result)) {
             disconnectGattServer();
-        }
-        else {
+        } else {
             BluetoothDevice device = result.getDevice();
 
             gatt = device.connectGatt(this, false, gattCallback);
@@ -207,6 +206,16 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
                 leResultListAdapter.notifyDataSetChanged();
                 setConnected(true);
             }
+        }
+    }
+
+    private void readMessage(BluetoothGattCharacteristic characteristic) {
+        if (!connected)
+            return;
+
+        boolean success = gatt.readCharacteristic(characteristic);
+        if (success) {
+            handler.post(() -> Toast.makeText(this, "Read Request", Toast.LENGTH_LONG).show());
         }
     }
 
@@ -233,12 +242,12 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
         characteristic.setValue(messageBytes);
         boolean success = gatt.writeCharacteristic(characteristic);
         if (success) {
-            Toast.makeText(this, "write success", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Write Request", Toast.LENGTH_LONG).show();
         }
     }
 
     public void showToast(String msg) {
-        handler.post(()->Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show());
+        handler.post(() -> Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show());
     }
 
     // ble랑 일반 bluetooth 동시에 스캔못함
@@ -327,6 +336,7 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
                 try {
                     final String message = "Read " + new String(messageBytes, "UTF-8");
                     showToast(message);
+                    handler.post(() -> binding.etClient.setText(message));
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
@@ -337,11 +347,20 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicChanged(gatt, characteristic);
 
-            byte[] messageByte = characteristic.getValue();
+            readMessage(characteristic);
+            byte[] messageBytes = characteristic.getValue();
             try {
-                final String messageStr = "Changed " + new String(messageByte, "UTF-8");
+                final String messageStr = new String(messageBytes, "UTF-8");
+                if (messageStr.equals("Disconnect")) {
+                    handler.post(() -> {
+                        disconnectGattServer();
+                        leResultListAdapter.clear();
+                        binding.rvDevice.invalidate();
+                    });
+                }
+
                 showToast(messageStr);
-                handler.post(()-> binding.etClient.setText(messageStr));
+                handler.post(() -> binding.etClient.setText(messageStr));
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
@@ -357,7 +376,6 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
                 if (BLEUtils.uuidMatches(characteristic.getUuid().toString(), BLEUtils.Service_Characteristic_UUID.toString())) {
                     echo = true;
                 }
-            } else {
             }
         }
     };

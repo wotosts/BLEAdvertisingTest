@@ -15,9 +15,9 @@ import java.util.List;
 
 public class LeResultListAdapter extends RecyclerView.Adapter<LeResultListAdapter.ItemViewHolder> {
 
-    List<ScanResult> resultList;
-    ItemClickListener listener;
-    ScanResult connected;
+    private List<ScanResult> resultList;
+    private ItemClickListener listener;
+    private ScanResult connected = null;
 
     public interface ItemClickListener {
         void onItemClicked(ScanResult result);
@@ -39,7 +39,7 @@ public class LeResultListAdapter extends RecyclerView.Adapter<LeResultListAdapte
 
     @Override
     public void onBindViewHolder(@NonNull ItemViewHolder itemViewHolder, int i) {
-        if (resultList.get(i).equals(connected)) {
+        if (connected != null && resultList.get(i).equals(connected)) {
             itemViewHolder.onBind(resultList.get(i), listener, true);
         } else {
             itemViewHolder.onBind(resultList.get(i), listener, false);

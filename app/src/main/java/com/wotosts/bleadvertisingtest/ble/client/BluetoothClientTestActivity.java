@@ -294,12 +294,10 @@ public class BluetoothClientTestActivity extends AppCompatActivity {
 
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 setConnected(true);
-                //gatt.discoverServices();
+                gatt.discoverServices();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 disconnectGattServer();
             }
-
-            gatt.discoverServices();
         }
 
         @Override

@@ -15,7 +15,7 @@ public class BLEUtils {
     public static final ParcelUuid Service_Characteristic_UUID = ParcelUuid
             .fromString("4df4445f-7482-4fe6-b89f-0ceab7ef140f");
     public static final ParcelUuid Service_Descriptor_UUID = ParcelUuid
-            .fromString("4df44460-7482-4fe6-b89f-0ceab7ef140f");
+            .fromString("00002902-0000-1000-8000-00805f9b34fb");
 
     public static final String PROXIMITY_UNKNOWN = "Unknown";
     public static final String PROXIMITY_NEAR = "Near";

@@ -37,8 +37,12 @@ import com.wotosts.bleadvertisingtest.ble.client.BluetoothClientTestActivity;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import static android.bluetooth.BluetoothGatt.GATT_FAILURE;
+import static android.bluetooth.BluetoothGatt.GATT_SUCCESS;
 
 public class BLEAdvertiserService extends Service {
 
@@ -99,7 +103,9 @@ public class BLEAdvertiserService extends Service {
         stopAdvertising();
         stopServer();
         handler.removeCallbacks(timeoutRunnable);
-        stopForeground(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            stopForeground(true);
+        }
         super.onDestroy();
     }
 
@@ -150,8 +156,9 @@ public class BLEAdvertiserService extends Service {
         serverCharacteristic = new BluetoothGattCharacteristic(BLEUtils.Service_Characteristic_UUID.getUuid(),
                 BluetoothGattCharacteristic.PROPERTY_WRITE | BluetoothGattCharacteristic.PROPERTY_NOTIFY | BluetoothGattCharacteristic.PROPERTY_READ,
                 BluetoothGattCharacteristic.PERMISSION_WRITE | BluetoothGattCharacteristic.PERMISSION_READ);
-        BluetoothGattDescriptor descriptor = new BluetoothGattDescriptor(BLEUtils.Service_Descriptor_UUID.getUuid(), BluetoothGattDescriptor.PERMISSION_READ);
-        descriptor.setValue("test".getBytes());
+        BluetoothGattDescriptor descriptor = new BluetoothGattDescriptor(BLEUtils.Service_Descriptor_UUID.getUuid(),
+                BluetoothGattDescriptor.PERMISSION_WRITE | BluetoothGattDescriptor.PERMISSION_READ);
+        descriptor.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
 
         serverCharacteristic.addDescriptor(descriptor);
         service.addCharacteristic(serverCharacteristic);
@@ -281,16 +288,17 @@ public class BLEAdvertiserService extends Service {
     }
 
     private void startAdvertising() {
-        // notification
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            goForegroundOreo();
-        else
-            goForeground();
+        AdvertiseSettings settings = buildAdvertiseSettings();
+        AdvertiseData data = buildAdvertiseData();
+        AdvertiseData scanResponse = buildScanResponseData();
 
+        // notification
         if (callback == null) {
-            AdvertiseSettings settings = buildAdvertiseSettings();
-            AdvertiseData data = buildAdvertiseData();
-            AdvertiseData scanResponse = buildScanResponseData();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                goForegroundOreo();
+            else
+                goForeground();
+
             callback = new AdvertiseCallback() {
                 @Override
                 public void onStartSuccess(AdvertiseSettings settingsInEffect) {
@@ -305,16 +313,16 @@ public class BLEAdvertiserService extends Service {
                     stopSelf();
                 }
             };
-
-            if (advertiser != null)
-                advertiser.startAdvertising(settings, data, scanResponse, callback);
         }
+
+        if (advertiser != null)
+            advertiser.startAdvertising(settings, data, scanResponse, callback);
     }
 
     private void stopAdvertising() {
         if (advertiser != null) {
             advertiser.stopAdvertising(callback);
-            callback = null;
+            //callback = null;
         }
     }
 
@@ -401,6 +409,45 @@ public class BLEAdvertiserService extends Service {
                 gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, characteristic.getValue());
             }
             handler.post(() -> Toast.makeText(getApplicationContext(), "Server ReadRequest", Toast.LENGTH_SHORT).show());
+        }
+
+        @Override
+        public void onDescriptorReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattDescriptor descriptor) {
+            //super.onDescriptorReadRequest(device, requestId, offset, descriptor);
+            if (descriptor.getUuid().equals(BLEUtils.Service_Descriptor_UUID)) {
+                byte[] returnValue;
+                if (devicesList.contains(device)) {
+                    returnValue = BluetoothGattDescriptor.ENABLE_INDICATION_VALUE;
+                } else {
+                    returnValue = BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE;
+                }
+
+                gattServer.sendResponse(device, requestId, GATT_SUCCESS, 0, returnValue);
+            } else {
+                gattServer.sendResponse(device, requestId, GATT_FAILURE, 0, null);
+            }
+        }
+
+        @Override
+        public void onDescriptorWriteRequest(BluetoothDevice device, int requestId, BluetoothGattDescriptor descriptor, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
+            //super.onDescriptorWriteRequest(device, requestId, descriptor, preparedWrite, responseNeeded, offset, value);
+            if (descriptor.getUuid().equals(BLEUtils.Service_Descriptor_UUID)) {
+                if (Arrays.equals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE, value)) {
+                    handler.post(()->Toast.makeText(BLEAdvertiserService.this, "Set up Noti", Toast.LENGTH_SHORT).show());
+                    addDevice(device);
+                } else if (Arrays.equals(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE, value)) {
+                    handler.post(()->Toast.makeText(BLEAdvertiserService.this, "Disable Noti", Toast.LENGTH_SHORT).show());
+                    removeDevice(device);
+                }
+
+                if (responseNeeded) {
+                    gattServer.sendResponse(device, requestId, GATT_SUCCESS, 0, null);
+                }
+            } else {
+                if (responseNeeded) {
+                    gattServer.sendResponse(device, requestId, GATT_FAILURE, 0, null);
+                }
+            }
         }
 
         @Override
